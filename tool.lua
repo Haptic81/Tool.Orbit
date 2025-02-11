@@ -1,13 +1,4 @@
-[[
-  __                .__    ____   ________ 
-_/  |_  ____   ____ |  |   \   \ /   /_   |
-\   __\/  _ \ /  _ \|  |    \   Y   / |   |
- |  | (  <_> |  <_> )  |__   \     /  |   |
- |__|  \____/ \____/|____/    \___/   |___|
- 
-Made by Nerdy Coder on Discord
-]]
-
+-- Made By Nerdy Coder Here is Source Code
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
