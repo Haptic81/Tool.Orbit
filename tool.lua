@@ -1,6 +1,6 @@
--- Made By Nerdy Coder Here is Source Code
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -9,9 +9,8 @@ local humanoid = character:WaitForChild("Humanoid")
 local orbitRadius = 50
 local orbitSpeed = 5
 local orbitHeight = 4
-local waitBeforeOrbit = 2
 local toolSpacing = math.pi / 3
-
+local telekinesisActive = false
 local orbitData = {}
 
 local function dropTools()
@@ -21,7 +20,6 @@ local function dropTools()
     for _, tool in ipairs(backpack:GetChildren()) do
         if tool:IsA("Tool") then
             tool.Parent = character
-            RunService.Heartbeat:Wait()
             tool.Parent = workspace
 
             local mainPart = tool:FindFirstChild("Handle") or tool:FindFirstChildWhichIsA("BasePart")
@@ -33,8 +31,10 @@ local function dropTools()
     return dropped
 end
 
-local function setupOrbit(droppedTools)
-    local toolIndex = 0
+local function setupOrbit()
+    local droppedTools = dropTools()
+    local toolCount = 0
+
     for tool, part in pairs(droppedTools) do
         if part then
             part.Anchored = false
@@ -54,26 +54,26 @@ local function setupOrbit(droppedTools)
                 tool = tool,
                 bodyPos = bodyPos,
                 bodyGyro = bodyGyro,
-                angle = toolIndex * toolSpacing,
+                angle = toolCount * toolSpacing,
             }
-            toolIndex = toolIndex + 1
+            toolCount = toolCount + 1
         end
     end
 end
 
-local function startOrbit()
+local function updateOrbit()
     RunService.Heartbeat:Connect(function(deltaTime)
         local hrp = character and character:FindFirstChild("HumanoidRootPart")
-        if hrp then
+        if hrp and not telekinesisActive then
             local center = hrp.Position
             local index = 0
 
             for part, data in pairs(orbitData) do
                 if part and part.Parent then
                     data.angle = data.angle + orbitSpeed * deltaTime
-                    local spacing = toolSpacing * index
-                    local newX = center.X + math.cos(data.angle + spacing) * orbitRadius
-                    local newZ = center.Z + math.sin(data.angle + spacing) * orbitRadius
+                    local spacing = data.angle + (index * toolSpacing)
+                    local newX = center.X + math.cos(spacing) * orbitRadius
+                    local newZ = center.Z + math.sin(spacing) * orbitRadius
                     local newY = center.Y + orbitHeight
 
                     data.bodyPos.Position = Vector3.new(newX, newY, newZ)
@@ -87,7 +87,32 @@ local function startOrbit()
     end)
 end
 
-local droppedTools = dropTools()
-wait(waitBeforeOrbit)
-setupOrbit(droppedTools)
-startOrbit()
+local function handleTelekinesis()
+    local mouse = player:GetMouse()
+
+    RunService.Heartbeat:Connect(function()
+        if telekinesisActive then
+            for part, data in pairs(orbitData) do
+                if part and part.Parent then
+                    local targetPos = Vector3.new(mouse.Hit.Position.X, mouse.Hit.Position.Y + 5, mouse.Hit.Position.Z)
+                    data.bodyPos.Position = targetPos
+                    data.bodyGyro.CFrame = CFrame.lookAt(part.Position, targetPos)
+                end
+            end
+        end
+    end)
+end
+
+local function monitorInput()
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == Enum.KeyCode.Comma then
+            telekinesisActive = not telekinesisActive
+        end
+    end)
+end
+
+setupOrbit()
+updateOrbit()
+handleTelekinesis()
+monitorInput()
